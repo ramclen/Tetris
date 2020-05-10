@@ -14,7 +14,9 @@ function arenaSweep() {
     const row = arena.splice(y, 1)[0].fill(0);
     arena.unshift(row);
     ++y;
-
+    if (rowCount > 0) {
+      new Audio('./asset/line.wav').play();
+    }
     player.score += rowCount * 10;
     rowCount *= 2;
   }
@@ -113,24 +115,30 @@ function drawMatrix(matrix, offset) {
 }
 let dropCounter = 0;
 let dropInterval = 1000;
+let mainTheme;
 
 let lastTime = 0;
 function update(time = 0) {
   const deltaTime = time - lastTime;
   lastTime = time;
-
   dropCounter += deltaTime;
-  if (dropCounter > dropInterval) {
+  if (gameStarted && !mainTheme) {
+    mainTheme = new Audio('./asset/main-theme.ogg');
+    mainTheme.loop = true
+    mainTheme.play();
+  }
+  if (gameStarted && dropCounter > dropInterval) {
     playerDrop();
   }
+  requestAnimationFrame(update);
   draw();
   updateScore();
-  requestAnimationFrame(update);
 }
 
 function playerDrop() {
   player.pos.y++;
   if (collide(arena, player)) {
+    new Audio('./asset/hit.wav').play();
     player.pos.y--;
     merge(arena, player);
     playerReset();
@@ -154,6 +162,10 @@ function playerReset() {
     x: (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0)
   };
   if (collide(arena, player)) {
+    gameStarted = false;
+    mainTheme.pause();
+    mainTheme = null;
+    new Audio('./asset/gameover.mp3').play();
     arena.forEach(row => row.fill(0));
     player.score = 0;
   }
@@ -173,6 +185,9 @@ function playerRotate(dir) {
   }
 }
 
+let gameStarted = false;
+
+
 document.addEventListener('keydown', event => {
   if (event.keyCode === 37) {
     playerMove(-1)
@@ -184,8 +199,12 @@ document.addEventListener('keydown', event => {
     playerRotate(-1)
   } else if (event.keyCode === 87) {
     playerRotate(1)
+  } else if (event.keyCode === 32) {
+    console.log('gameStarted');
+    gameStarted = true;
   }
 })
+
 
 const colors = [
   null,
